@@ -11,7 +11,10 @@ library(tidyverse)
 library(dplyr)
 library(corrplot)
 
-
+# Pacotes para Modelagem --------------------------------------------------
+library(ggplot2)
+library(skimr)
+library(tidymodels)
 
 
 # Dados -------------------------------------------------------------------
@@ -521,9 +524,20 @@ graf_proporcao_categoricos <- ha |>
   #> Poucas observações na categoria zero usada como referencia. 
   #> Tenho que refazer trocando a referencia.
   
-  
-
  
+  # Retirando classe 0
+  ha <-  ha |> 
+              filter(thall != 0)
+
+  # Refazendo análise anterior
+  table(ha$thall)
+  summary(ha$thall)
+  
+  model_thall <- glm(output ~ thall, data=ha, family = "binomial")
+  summary(model_thall)
+  gtsummary::tbl_regression(model_thall, exponentiate = TRUE)
+ 
+  
 # Analise: Possibilidade de interações ------------------------------------
 
 # age e sex?
@@ -542,40 +556,142 @@ graf_proporcao_categoricos <- ha |>
  
 
 # Modelagem ---------------------------------------------------------------
-  # Modelo Logístico
- 
-#. Modelo Completo
- modelo_completo <- glm(output ~ ., data = ha, family = binomial)
+  
+  
+  # Separar os dados em calibração e validação
+  grupo = dismo::kfold(ha, 5)
+  data_train <- ha[grupo !=1,] #80% (4/5 dos registros)
+  data_test <- ha[grupo ==1,] #20% (1/5 dos registros)
+  
+  str(data_train)
+  str(data_test)
+  
+
+# Modelo Logístico
+  
+  #. Modelo Completo
+ modelo_completo <- glm(output ~ ., data = data_train, family = binomial)
  summary(modelo_completo)
    
       
- #> Importante:
+ #> Variáveis Importante:
  #> Sex
  #> cp
  #> oldpeak
  #> caa
+ #> exng
  
- # Variance inflation factor (Vif)
+ #> Variáveis que podem ser retiradas do modelo:
+ #> trtbps
+ #> chol
+ #> fbs
+ #> restecg
+ #> thalachh
+ #> slp
+ #> thall
+ 
+# Variance inflation factor (Vif)
  car::vif(modelo_completo)
  
- 
- #
- output_predito <- ha
- output_predito$probabilidade_de_output <- predict(modelo_completo, type = "response")
- output_predito$output_predito <- ifelse(output_predito$probabilidade_de_output > 0.5, "Yes", "No")
- view(output_predito)       
- 
- output_predito %>%
-   ggplot(aes(x = probabilidade_de_output, fill = output)) +
-   geom_boxplot(alpha = 0.3)
+performance::check_model(modelo_completo)
+plot(modelo_completo) 
+# Conclusão: O fator VIF indica baixa colinearidade entre as variáveis. Avalia o quanto a variância de um coeficiente de regressão estimado aumenta se as suas preditoras estiverem correlacionadas. Se nenhum fator estiver correlacionado, os VIFs serão todos proximos a 1.
  
  
- #. Acurácia
- library(pROC)
- curva_roc <- roc(output_predito, output, probabilidade_de_output)
- auc(curva_roc)
- plot(curva_roc)
+ 
+  #. Teste: Modelo Completo
+ 
+        # 1. ROC
+#         
+# output_predito$probabilidade_de_output <- predict(modelo_completo, type = "response")
+#         output_predito$output_predito <- ifelse(output_predito$probabilidade_de_output > 0.5, "Yes", "No")
+#         view(output_predito)       
+#          library(pROC)
+#         curva_roc <- roc(output, probabilidade_de_output)
+#         auc(curva_roc)
+#         plot(curva_roc)
+#         output_predito %>%
+#           ggplot(aes(x = probabilidade_de_output, fill = output)) +
+#           geom_boxplot(alpha = 0.3)
+#         
+#         #. Acurácia
+#         library(pROC)
+#         curva_roc <- roc(output_predito, output, probabilidade_de_output)
+#         auc(curva_roc)
+#         plot(curva_roc)
 
+        
+        # 2. Analisar as previsões
+      
+      # Predicao
+      fitted_results <- dismo::predict(modelo_completo, newdata = data_test, type = "response")
+      fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
+      
+      
+      # Unir: Observados vs Preditos
+      data_test_pred <- data_test |> 
+                      add_column(fitted =  fitted_results,
+                                 fitted_cat = fitted_results_cat ) |>
+                      mutate(fitted_exp = exp(fitted_results))
+      
+      # Verificar quantidade de acerto
+      table(data_test_pred$output == data_test_pred$fitted_cat) 
+      
+      
+      # Acurácia do Modelo
+      Classifi <- mean(data_test_pred$fitted_cat != data_test_pred$output)
+      print(paste('Accuracy',round(1-Classifi, digits = 3)))
+      
+      
+      
+      
+      
+      
+      # Tabela de confusão
+      library(caret)
+      caret::print.confusionMatrix(data = data_test_pred$output, reference = data_test_pred$fitted_cat )
+      
+      
+      
+      # Pontos Observados
+      data_test_pred  |> 
+        filter(oldpeak > 0) |> 
+        ggplot() +
+          geom_point(aes(oldpeak, output), alpha = 0.3) +
+          geom_point(aes(oldpeak, pred_exp), color = "red") +
+          theme_bw()
+        
+      # Observado vs Esperado
+      data_test_pred %>%
+        filter(oldpeak > 0) %>%
+        ggplot() +
+        geom_point(aes(pred_exp, output)) +
+        geom_abline(slope = 1, intercept = 0, colour = "purple", size = 1) +
+        theme_bw()
+      
+      data_test_pred %>%
+        filter(oldpeak > 0) %>%
+        ggplot() +
+        geom_point(aes(output, output - pred_exp))  
+        
+
+      library(yardstick)
+      
+      metrics <- metric_set(rmse, mae, rsq)
+      
+      # Métricas de erro
+      data_test_pred%>%
+        metrics(truth = output, estimate = pred_exp)
+      
+      
+      diamonds_com_previsao %>%
+        mae(truth = price, estimate = .pred_price)
+      diamonds_com_previsao %>%
+        rsq(truth = price, estimate = .pred_price)
+      diamonds_com_previsao %>%
+        rmse(truth = price, estimate = .pred_price)
+      
+      
 #. Modelo 1
  modelo1 <- glm(output ~ age+ thalachh+ sex + cp + oldpeak +caa , data = ha, family = binomial)
  summary(modelo1)
