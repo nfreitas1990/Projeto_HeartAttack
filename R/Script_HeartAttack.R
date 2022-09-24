@@ -18,7 +18,7 @@ library(tidymodels)
 
 
 # Dados -------------------------------------------------------------------
-ha <- readr::read_csv(file = "raw/heart.csv")
+ha <- readr::read_csv(file = "data-raw/heart.csv")
 
 
 
@@ -34,7 +34,7 @@ ha <- readr::read_csv(file = "raw/heart.csv")
     summary (ha)
   
   # Missing Values: não possui
-    table(map(mtcars, is.na)) |> 
+    table(map(ha, is.na)) |> 
       knitr::kable()
 
   # Significados das siglas
@@ -60,11 +60,6 @@ ha <- readr::read_csv(file = "raw/heart.csv")
   knitr::kable()
   
   
-# - Interpretação das variáveis
-
-  # Talassemia: doenças hemolíticas hereditárias causadas por síntese defeituosa 
-  # de hemoglobina, disseminada em países mediterrâneos, africanos e asiáticos.:
-
 
 # -Variáveis do banco de dados
   
@@ -777,3 +772,27 @@ graf_inter(y = ha$caa,fill = ha$restecg)
 graf_inter(y = ha$caa,fill = ha$exng)
 graf_inter(y = ha$caa,fill = ha$slp)
 graf_inter(y = ha$caa,fill = ha$thall)
+
+
+
+# Opção 2: sintetizando para gerar graficos -------------------------------
+
+
+graf_inter2 <- function(fill){
+  ha |> 
+    ggplot(aes(x = output, y = age, fill = fill))+
+    geom_boxplot()+
+    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+    meu_tema+
+    xlab ("Doença Cardíaca")+
+    theme(legend.position = "bottom")}
+
+ha |> 
+  select(where(is.factor), age) |> 
+  map(.f = graf_inter2)
+
+
+
+
+
+

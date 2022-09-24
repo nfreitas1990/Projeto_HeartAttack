@@ -1,0 +1,119 @@
+---
+title: "Heart Attack"
+author: "Document Author"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+# Contextualização
+
+<p align="justify">
+O infarto agudo do miocárdio, conhecido como ataque cardíaco (no inglês *Heart Attack*), está entre uma das doenças cardiovasculares mais mortais. Geralmente ocorre quando a circulação ou o fluxo sanguíneo para o coração é interrompido, fazendo com que o coração não receba oxigênio e morra. Leva apenas de seis a oito minutos sem oxigênio para que o músculo cardíaco pare de funcionar, levando o indivíduo a morte.
+</p>
+
+<p align="justify">
+No Brasil, em 2021, estima-se que 230 mil pessoas morreram por doenças cardiovasculares, e destes, 73.035 mil decorrentes de infarto ([CNN](https://www.cnnbrasil.com.br/saude/no-brasil-mais-de-230-mil-pessoas-morreram-por-doencas-cardiovasculares-em-2021/),2021).
+</p>
+
+<br>
+<center>
+## E se pudéssemos predizer as pessoas que estão mais propensas a sofrer ataques cardíacos?
+</center>
+</br>
+
+<p align="justify">
+Neste contexto, este estudo surge com o objetivo de desenvolver um sistema de predição para identificar, com bases em características biológicas, os indivíduos com maior propensão a sofrer ataque cardíaco. Além de ajudar no diagnóstico, possibilita melhor compreensão do problema 
+</p>
+
+ 
+<font color="#1BA6BD" size="4px"><p align="justify">
+Código para as análises pode ser acessado  [GitHub nfreitas1990](https://github.com/nfreitas1990/Projeto_HeartAttack). Sugiro acompanhar as análises com o código aberto em .R [Script_HeartAttack.R](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/R)</font></p> ou em .RMD []
+
+</br>
+
+## Pacotes
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse) 
+library(dplyr)
+library(corrplot)
+library(ggplot2)
+library(skimr)
+library(tidymodels)
+```
+
+## Dados
+<p align="justify">
+Os dados utilizados para esse relatório foram obtidos no [Kaggle](https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset). A base de dados *Heart Attack* foi carregada com o nome `ha`. 
+</p>
+```{r include = FALSE, message=FALSE, warning=FALSE}
+ha <- readr::read_csv(file = "../data-raw/heart.csv")
+```
+<p align="justify">
+A base de dados (`ha`) é composta por `r ncol(ha)` variáveis. Abaixo a tabela com as variáveis e o respectivo significado `tab_sig`.
+</p>
+
+## Conhecendo os Dados
+
+```{r include=FALSE }
+tab_sig<- data.frame(Siglas = colnames(ha),
+                     Significado = c("**Idade do paciente**",
+                                    "**Sexo do paciente**",
+                                    "**Tipo de dor no peito**:<br> 1|angina tipica; <br>2|angina atipica;<br>3|dor não angina;<br> 4|assintomático",
+                                    "**Pressão arterial em repouso** (mm/Hg)",
+                                    "**Colesterol** (mg/dl)",
+                                    "**Glicemia** (jejum > 120 mg/dl):<br> 1|Verdadeiro;<br> 0|Falso",
+                                    "**Eletrocardiográficos** (repouso):<br>1|normal;<br>2|tendo anormalidade da onda ST-T;<br>3|provável hipertrofia ventricular esquerda",
+                                    "**Frequência cardíaca máxima** ",
+                                    "**Angina induzida por exercício**:<br>1|Sim;<br> 0|Não",
+                                    "**Depressão de ST induzida por exercício",
+                                    "**Inclinação do segmento ST**:<br>0|sem inclinação;<br>1|plano;<br>2|descendo",
+                                    "**Número de grandes vasos**",
+                                    "**Talassemia**:<br>0|nulo;<br> 1|defeito corrigido;<br> 2|normal;<br> 3|defeito reversível",
+                                    "**Diagnóstico de doença cardíaca**:<br>0|| < 50% estreitamento do diâmetro. Menos chance de doença cardíaca;<br> 1| > 50% de estreitamento do diâmetro. Mais chance de doença cardíaca"))
+    
+# Tabela com significados 
+# Para consulta durante as análises
+  tab_sig |> 
+  knitr::kable()
+```
+
+```{r}
+  tab_sig |> 
+  knitr::kable()
+```
+
+## Avaliando a presença de valores faltantes
+<p align="justify">
+Não foram encontrados valores `NA`em nenhuma coluna da tabela `ha`.
+</p>
+```{r}
+table(map(ha, is.na)) |> 
+      knitr::kable()
+```
+
+
+# 1. Análise Descritiva
+
+## Tipologia
+<p align = "justify">
+As variáveis foram avaliadas quanto ao tipo, categórica ou numérica, e foram 
+transformadas para que respeitasse a sua natureza.
+As variáveis categóricas
+</p>
+
+```{r message=FALSE, warning=FALSE}
+  #    .Tipologia
+  str(ha)
+  view(ha)
+  ha <- ha |> 
+        mutate(
+        across(.cols = c(sex, cp, fbs, restecg, exng, slp, thall, output),
+               .fns = as.factor))
+  
+  skimr::skim(ha)
+```
+
