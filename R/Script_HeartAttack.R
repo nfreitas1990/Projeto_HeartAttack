@@ -154,6 +154,36 @@ ha <- readr::read_csv(file = "raw/heart.csv")
         logit_chance_output = log(p_output/(1-p_output)))
     
   }
+  
+# Função analise_predicao ( ): para predizer valores de acordo com modelo da regressao
+  analise_predicao <- function (modelo){
+    fitted_results <- dismo::predict(modelo, newdata = data_test, type = "response")
+    fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
+    
+    data_test_pred <- data_test |> 
+      add_column(fitted =  fitted_results,
+                 fitted_cat = fitted_results_cat ) |>
+      mutate(fitted_exp = exp(fitted_results))
+    print(data_test_pred)}
+  
+  
+#Função desempenho ( ): para calcular as metricas de desempenho dos modelos
+  
+  desempenho <-  function(modelo){
+    fitted_results <- dismo::predict(modelo, newdata = data_test, type = "response")
+    fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
+    
+    data_test_pred <- data_test |> 
+      add_column(fitted =  fitted_results,
+                 fitted_cat = fitted_results_cat ) |>
+      mutate(fitted_exp = exp(fitted_results))
+    
+    data_test_pred <- data_test_pred |> 
+      mutate(fitted_cat = as_factor(fitted_cat))
+    
+    metricas <- caret::confusionMatrix(data = data_test_pred1$output,
+                                       reference = data_test_pred1$fitted_cat)
+    print(metricas)}
 
 # 1.Análise Descritiva -------------------------------------------------
 
@@ -538,27 +568,12 @@ graf_proporcao_categoricos <- ha |>
   gtsummary::tbl_regression(model_thall, exponentiate = TRUE)
  
   
-# Analise: Possibilidade de interações ------------------------------------
-
-# age e sex?
- ha |> 
-   ggplot(aes(x = output, y = age, fill = sex))+
-   geom_boxplot()+
-   scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
-   meu_tema+
-   xlab ("Doença Cardíaca")+
-   ylab("Idade")+
-   labs(title = "Doenças cardíacas entre sexos")+
-   guides(fill = guide_legend(title = "Sexo"))+
-   theme(legend.position = "bottom") 
- 
- 
- 
 
 # Modelagem ---------------------------------------------------------------
   
   
   # Separar os dados em calibração e validação
+  set.seed(1)
   grupo = dismo::kfold(ha, 5)
   data_train <- ha[grupo !=1,] #80% (4/5 dos registros)
   data_test <- ha[grupo ==1,] #20% (1/5 dos registros)
@@ -602,28 +617,29 @@ plot(modelo_completo)
   #. Teste: Modelo Completo
  
         # 1. ROC
-#         
-# output_predito$probabilidade_de_output <- predict(modelo_completo, type = "response")
-#         output_predito$output_predito <- ifelse(output_predito$probabilidade_de_output > 0.5, "Yes", "No")
-#         view(output_predito)       
-#          library(pROC)
-#         curva_roc <- roc(output, probabilidade_de_output)
-#         auc(curva_roc)
-#         plot(curva_roc)
-#         output_predito %>%
-#           ggplot(aes(x = probabilidade_de_output, fill = output)) +
-#           geom_boxplot(alpha = 0.3)
-#         
-#         #. Acurácia
-#         library(pROC)
-#         curva_roc <- roc(output_predito, output, probabilidade_de_output)
-#         auc(curva_roc)
-#         plot(curva_roc)
+  output_por_faixa_de_probabilidades <- data_test_pred |> 
+    mutate(faixa_de_risco = cut_interval(fitted_exp, 7)) |> 
+    group_by(faixa_de_risco) |> 
+    summarise(
+      n = n(),
+      probabilidade_de_output_media = mean(fitted),
+      risco_de_output = mean(output == 1),
+      logito_do_risco_de_output = log(risco_de_output/(1 - risco_de_output)))
+  output_por_faixa_de_probabilidades
+
+library(pROC)
+curva_roc <- roc(output_por_faixa_de_probabilidades, output, probabilidade_de_output)
+auc(curva_roc)
+p <- plot(curva_roc)
+p +annotate("text",x = 0.6, y = 0.8, label = "Area under the curve: 0.9496")
+
+
+
+
+# 2. Analisar previsões ---------------------------------------------------
 
         
-        # 2. Analisar as previsões
-      
-      # Predicao
+      # Predicao com dados teste
       fitted_results <- dismo::predict(modelo_completo, newdata = data_test, type = "response")
       fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
       
@@ -634,7 +650,7 @@ plot(modelo_completo)
                                  fitted_cat = fitted_results_cat ) |>
                       mutate(fitted_exp = exp(fitted_results))
       
-      # Verificar quantidade de acerto
+      # Verificar quantidade de acertos
       table(data_test_pred$output == data_test_pred$fitted_cat) 
       
       
@@ -643,90 +659,121 @@ plot(modelo_completo)
       print(paste('Accuracy',round(1-Classifi, digits = 3)))
       
       
+      data_test_pred <- data_test_pred |> 
+        mutate(fitted_cat = as_factor(fitted_cat))
       
       
+      # Metricas Desempenho: Tabela de confusão
+      caret::confusionMatrix(data = data_test_pred$output, reference = data_test_pred$fitted_cat)
       
       
-      # Tabela de confusão
-      library(caret)
-      caret::print.confusionMatrix(data = data_test_pred$output, reference = data_test_pred$fitted_cat )
+      #> Interpretação:
+      #> 
+      #> 
+    
       
+    # Gráfico
       
-      
-      # Pontos Observados
-      data_test_pred  |> 
-        filter(oldpeak > 0) |> 
-        ggplot() +
-          geom_point(aes(oldpeak, output), alpha = 0.3) +
-          geom_point(aes(oldpeak, pred_exp), color = "red") +
-          theme_bw()
-        
-      # Observado vs Esperado
-      data_test_pred %>%
-        filter(oldpeak > 0) %>%
-        ggplot() +
-        geom_point(aes(pred_exp, output)) +
-        geom_abline(slope = 1, intercept = 0, colour = "purple", size = 1) +
-        theme_bw()
+      #1
       
       data_test_pred %>%
-        filter(oldpeak > 0) %>%
-        ggplot() +
-        geom_point(aes(output, output - pred_exp))  
-        
+        ggplot(aes(x = fitted_exp, fill = output)) +
+        geom_boxplot(alpha = 0.3)
+      
 
-      library(yardstick)
-      
-      metrics <- metric_set(rmse, mae, rsq)
-      
-      # Métricas de erro
-      data_test_pred%>%
-        metrics(truth = output, estimate = pred_exp)
-      
-      
-      diamonds_com_previsao %>%
-        mae(truth = price, estimate = .pred_price)
-      diamonds_com_previsao %>%
-        rsq(truth = price, estimate = .pred_price)
-      diamonds_com_previsao %>%
-        rmse(truth = price, estimate = .pred_price)
+      #2
+     output_por_faixa_de_probabilidades |> 
+        ggplot(aes(x = probabilidade_de_output_media, y = risco_de_output)) +
+        geom_point() +
+        geom_label(aes(label = scales::percent(probabilidade_de_output_media,1))) +
+        meu_tema
       
       
-#. Modelo 1
- modelo1 <- glm(output ~ age+ thalachh+ sex + cp + oldpeak +caa , data = ha, family = binomial)
+
+# Modelos Alternativos ----------------------------------------------------
+
+      
+#. Modelo 1: somente com variáveis significativas no modelo completo
+     #> Acurácia e desempenho diminuiu em comparação com o modelo completo
+
+modelo1 <- glm(output ~ sex + cp+ oldpeak + caa + exng, data = data_train, family = binomial)
  summary(modelo1)
+ summary(modelo_completo)
+
+# Analisar predição
+analise_predicao(modelo1)  
+
+# Metricas Desempenho: Tabela de confusão
+desempenho(modelo1) 
+
+
+
+
  
+  
+# Analise: Possibilidade de interações ------------------------------------
 
-      
-
-      
-
-      
-   
-      
-     
-  
-  
-  
-  
-  
-  skimr::skim(ha)    
-  tab_sig |> 
-    knitr::kable()   
-      
+# Padronizar a função
+graf_inter <- function(y, fill){
   ha |> 
-    group_by(sex) |> 
-    summarise(
-      n = n()) |> 
-    ggplot(aes(y = n, x = idade, label = n))+
-    geom_bar(stat = "identity", alpha = 1/2, fill= "orange") +    
-    geom_label(position = position_stack (vjust = 0.85),alpha = 0.8, 
-               colour = "darkgray", fontface = "bold", show_guide  = F)+ 
-    scale_y_continuous(breaks=NULL)+
-    scale_x_discrete(labels = c("20-29","30-39","40-49","50-59","60-69",">70"))+
-    #scale_x_discrete(labels = seq(from = 20, to = 80, 10) )+
-    meu_tema
-  
+    ggplot(aes(x = output, y = y, fill = fill))+
+    geom_boxplot()+
+    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+    meu_tema+
+    xlab ("Doença Cardíaca")+
+    theme(legend.position = "bottom")}
+
+# AGE vs categoricas
+graf_inter(y = ha$age, fill = ha$sex)
+graf_inter(y = ha$age, fill = ha$cp)
+graf_inter(y = ha$age,fill = ha$fbs)
+graf_inter(y = ha$age,fill = ha$restecg)
+graf_inter(y = ha$age,fill = ha$exng)
+graf_inter(y = ha$age,fill = ha$slp)
+graf_inter(y = ha$age,fill = ha$thall)
 
 
+# trtbps vs categoricas
+graf_inter(y = ha$trtbps, fill = ha$sex)
+graf_inter(y = ha$trtbps, fill = ha$cp)
+graf_inter(y = ha$trtbps,fill = ha$fbs)
+graf_inter(y = ha$trtbps,fill = ha$restecg)
+graf_inter(y = ha$trtbps,fill = ha$exng)
+graf_inter(y = ha$trtbps,fill = ha$slp)
+graf_inter(y = ha$trtbps,fill = ha$thall)
 
+#chol
+graf_inter(y = ha$chol, fill = ha$sex)
+graf_inter(y = ha$chol, fill = ha$cp)
+graf_inter(y = ha$chol,fill = ha$fbs)
+graf_inter(y = ha$chol,fill = ha$restecg)
+graf_inter(y = ha$chol,fill = ha$exng)
+graf_inter(y = ha$chol,fill = ha$slp)
+graf_inter(y = ha$chol,fill = ha$thall)
+
+#thalachh
+graf_inter(y = ha$thalachh, fill = ha$sex)
+graf_inter(y = ha$thalachh, fill = ha$cp)
+graf_inter(y = ha$thalachh,fill = ha$fbs)
+graf_inter(y = ha$thalachh,fill = ha$restecg)
+graf_inter(y = ha$thalachh,fill = ha$exng)
+graf_inter(y = ha$thalachh,fill = ha$slp)
+graf_inter(y = ha$thalachh,fill = ha$thall)
+
+#oldpeak
+graf_inter(y = ha$oldpeak, fill = ha$sex)
+graf_inter(y = ha$oldpeak, fill = ha$cp)
+graf_inter(y = ha$oldpeak,fill = ha$fbs)
+graf_inter(y = ha$oldpeak,fill = ha$restecg)
+graf_inter(y = ha$oldpeak,fill = ha$exng)
+graf_inter(y = ha$oldpeak,fill = ha$slp)
+graf_inter(y = ha$oldpeak,fill = ha$thall)
+
+#caa
+graf_inter(y = ha$caa, fill = ha$sex)
+graf_inter(y = ha$caa, fill = ha$cp)
+graf_inter(y = ha$caa,fill = ha$fbs)
+graf_inter(y = ha$caa,fill = ha$restecg)
+graf_inter(y = ha$caa,fill = ha$exng)
+graf_inter(y = ha$caa,fill = ha$slp)
+graf_inter(y = ha$caa,fill = ha$thall)
