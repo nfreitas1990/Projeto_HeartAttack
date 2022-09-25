@@ -11,27 +11,43 @@ output:
 # Contextualização
 
 <p align="justify">
-O infarto agudo do miocárdio, conhecido como ataque cardíaco (no inglês *Heart Attack*), está entre uma das doenças cardiovasculares mais mortais. Geralmente ocorre quando a circulação ou o fluxo sanguíneo para o coração é interrompido, fazendo com que o coração não receba oxigênio e morra. Leva apenas de seis a oito minutos sem oxigênio para que o músculo cardíaco pare de funcionar, levando o indivíduo a morte.
+
+O infarto agudo do miocárdio, conhecido como ataque cardíaco (no inglês *Heart Attack*), está entre uma das doenças cardiovasculares mais mortais. Geralmente ocorre quando a circulação ou o fluxo sanguíneo para o coração é interrompido, fazendo com que o coração não receba oxigênio. Leva apenas de seis a oito minutos sem oxigênio para que o músculo cardíaco pare de funcionar, levando o indivíduo a morte.
+
 </p>
 
 <p align="justify">
+
 No Brasil, em 2021, estima-se que 230 mil pessoas morreram por doenças cardiovasculares, e destes, 73.035 mil decorrentes de infarto ([CNN](https://www.cnnbrasil.com.br/saude/no-brasil-mais-de-230-mil-pessoas-morreram-por-doencas-cardiovasculares-em-2021/),2021).
+
 </p>
 
 <br>
+
 <center>
+
 ## E se pudéssemos predizer as pessoas que estão mais propensas a sofrer ataques cardíacos?
+
 </center>
+
 </br>
 
 <p align="justify">
-Neste contexto, este estudo surge com o objetivo de desenvolver um sistema de predição para identificar, com bases em características biológicas, os indivíduos com maior propensão a sofrer ataque cardíaco. Além de ajudar no diagnóstico, possibilita melhor compreensão do problema 
+
+Neste contexto, este estudo surge com o objetivo de desenvolver um sistema de 
+predição para identificar, com base em características biológicas,  
+indivíduos com maior propensão a sofrer ataque cardíaco. Além de ajudar 
+no diagnóstico, possibilita melhor compreensão do problema ao mapear 
+as características que mais se associam ao risco de ataque cardíaco.
+
 </p>
-
- 
-<font color="#1BA6BD" size="4px"><p align="justify">
-Código para as análises pode ser acessado  [GitHub nfreitas1990](https://github.com/nfreitas1990/Projeto_HeartAttack). Sugiro acompanhar as análises com o código aberto em .R [Script_HeartAttack.R](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/R)</font></p> ou em .RMD []
-
+<br>
+<font color="#1BA6BD" size="3px">
+<p align="justify">
+Código para as análises pode ser acessado [GitHub nfreitas1990](https://github.com/nfreitas1990/Projeto_HeartAttack). Sugiro o acompanhamento das análises com o código aberto em  [Script_HeartAttack.R](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/R)
+ou em .Rmd [Projeto_HeartAttack.Rmd](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/docs). Pois alguns códigos foram ocultados para melhorar a visualização.
+</p>
+</font>
 </br>
 
 ## Pacotes
@@ -46,15 +62,40 @@ library(tidymodels)
 ```
 
 ## Dados
+
 <p align="justify">
-Os dados utilizados para esse relatório foram obtidos no [Kaggle](https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset). A base de dados *Heart Attack* foi carregada com o nome `ha`. 
+
+Os dados utilizados para este relatório foram obtidos no [Kaggle](https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset). A base de dados *Heart Attack* foi carregada com o nome `ha`.
+
 </p>
+
 ```{r include = FALSE, message=FALSE, warning=FALSE}
 ha <- readr::read_csv(file = "../data-raw/heart.csv")
 ```
+
 <p align="justify">
-A base de dados (`ha`) é composta por `r ncol(ha)` variáveis. Abaixo a tabela com as variáveis e o respectivo significado `tab_sig`.
+
+A base de dados (`ha`) é composta por `r ncol(ha)` variáveis. Segue abaixo a tabela com as variáveis e o respectivo significado `tab_sig`.
+
 </p>
+
+```{r include = FALSE}
+## Padronização do tema dos gráficos
+meu_tema <- theme(legend.position = "none",
+                    #axis.line.x = element_line(colour = "gray"),
+                    #axis.line.y = element_line(colour = "gray"),
+                    
+                    axis.title = element_text(face = "bold", size = 16),
+                    axis.text.x = element_text(face = "plain", size=12),
+                    axis.text.y = element_text(face = "plain", size=12),
+                    
+                    axis.ticks = element_line(colour = "gray", size = 0.2),
+                    
+                    panel.grid = element_blank(),
+                    panel.background = element_blank())
+```
+
+
 
 ## Conhecendo os Dados
 
@@ -87,28 +128,33 @@ tab_sig<- data.frame(Siglas = colnames(ha),
 ```
 
 ## Avaliando a presença de valores faltantes
+
 <p align="justify">
+
 Não foram encontrados valores `NA`em nenhuma coluna da tabela `ha`.
+
 </p>
+
 ```{r}
 table(map(ha, is.na)) |> 
       knitr::kable()
 ```
 
-
 # 1. Análise Descritiva
 
 ## Tipologia
-<p align = "justify">
+
+<p align="justify">
+
 As variáveis foram avaliadas quanto ao tipo, categórica ou numérica, e foram 
-transformadas para que respeitasse a sua natureza.
-As variáveis categóricas
+transformadas para que respeitasse a sua natureza. As variáveis 
+`sex`, `cp`, `fbs`, ` restecg`, `exng`, `slp`, `thall` e `output` foram 
+transformadas para categoricas.  
+
+Os dados obtidos correspondem aos registros referentes a `r nrow(ha)` pacientes.
 </p>
 
 ```{r message=FALSE, warning=FALSE}
-  #    .Tipologia
-  str(ha)
-  view(ha)
   ha <- ha |> 
         mutate(
         across(.cols = c(sex, cp, fbs, restecg, exng, slp, thall, output),
@@ -116,4 +162,143 @@ As variáveis categóricas
   
   skimr::skim(ha)
 ```
+
+## Colinearidade
+<p align="justify">
+As variáveis numéricas foram testadas para evitar colinearidade. O método de 
+Spearman foi escolhido em detrimento do método de Pearson para evitar assumir
+pressuposto com relação a normalidade dos dados. 
+
+
+```{r}
+  ha_numeric <- ha  |>
+                    select(where(is.numeric))
+  corrplot.mixed(cor(ha_numeric, method = "spearman"),lower = "number", upper = 'color')
+  
+```
+A análise indica que existe baixa correlação (<0.45) entre as variáveis.
+Indicando que todas podem ser utilizadas para as análises futuras, sem incorrer
+em risco de colinearidade.
+</p>
+
+# Criando funções que serão usadas nesta seção
+```{r}
+# Função grafico_proporcao ( ) :para Histograma das proporções
+  grafico_proporcao <- function(coluna, bins=NULL, breaks = NULL, eixox = NULL){
+    
+    ha |> 
+      ggplot(aes(y = as.numeric(output)-1, x = coluna)) +
+      stat_summary_bin(size = 1, alpha = 0.1, colour = "white", bins = bins,breaks = breaks,
+                       geom = "bar", fill = "royalblue", fun = function(x) 1,
+                       na.rm = T) +
+      stat_summary_bin(size = 1,alpha = 0.3, colour = "white", bins = bins,
+                       breaks = breaks,geom = "bar", fill = "orange", na.rm = T) +
+      stat_summary_bin(size = 2, alpha = 1, colour = "purple", bins = bins,
+                       breaks = breaks, geom = "point", na.rm = T) + 
+      stat_smooth(method = "glm", method.args = list(family = "binomial"),
+                  se = FALSE, na.rm = T) +
+      xlab(eixox)+
+      ylab("Proporção Doença cardíaca")+
+      geom_point() +
+      meu_tema}
+    
+    # Função tabela_proporcao ( ): para tabela das proporções
+  
+  tabela_proporcao <- function(coluna, breaks = NULL ){
+    ha |> 
+      mutate(
+        coluna_faixa = cut(coluna, breaks = breaks)) |> 
+      group_by(coluna_faixa) |> 
+      summarise(
+        n = n(),
+        coluna = mean(coluna),
+        p_output = mean(output == 1),
+        logit_chance_output = log(p_output/(1-p_output)))}
+```
+
+
+# Variável: Idade (age)
+<p align="justify">
+Os dados analisados representam, em sua maioria, pacientes que estão na 
+faixa de 50-59 anos de idade. Os pacientes possuem idade acima de 30 anos, 
+apenas 1 paciente na faixa de 20-29 anos. 
+</p>
+
+```{r warning=FALSE}
+ha |> 
+    mutate(
+      idade = cut(age, breaks = c(20, 29, 39, 49, 59, 69, 79, 89))) |> 
+    group_by(idade) |> 
+    summarise(
+      n = n()) |> 
+    ggplot(aes(y = n, x = idade, label = n))+
+    geom_bar(stat = "identity", alpha = 1/2, fill= "lightblue") +    
+    geom_label(position = position_stack (vjust = 0.85),alpha = 0.8, 
+               colour = "darkgray", fontface = "bold", show_guide  = F)+ 
+    scale_y_continuous(breaks=NULL)+
+    ylab(" ")+
+    xlab("Idade")+
+    scale_x_discrete(labels = c("20-29","30-39","40-49","50-59","60-69",">70"))+
+    meu_tema 
+```
+<p align="justify">
+Com base no BoxPlot entre a idade e output, variável que representa a chance de
+doença cardíaca, observamos que os pacientes com **menor** chance de doença cardíaca
+tem idade maior do que o grupo com **maior** chance de doença cardíaca.
+</p>
+
+```{r}
+ha |> 
+      ggplot(aes(x = output, y = age))+
+      geom_boxplot(fill = "lightblue", alpha = 0.3)+
+      scale_x_discrete(labels = c("Não", "Sim"))+
+      xlab ("Doença Cardíaca")+
+      ylab("Idade")+
+      meu_tema
+    
+```
+<p align="justify">
+Para confirmar a análise visual, foi realizado o Teste de Welch. Este teste
+é similar ao T-Student só que para dados **sem** homogeneidade na variância, como 
+é caso em questão. E será usado para confirmar se existe diferença nas médias 
+dos grupos **com** e **sem** doença cardíaca.
+</p>
+
+```{r}
+## Testando pressupostos da Análise
+# Pressuposto 1. Homogeneidade de variancias
+    # Ho: variâncias iguais - Rejeitada
+    car::leveneTest(ha$age ~ ha$output) 
+
+# Presuposto 2. Teste de normalidade
+  # Inspeção visual
+    car::qqPlot(ha$age, grid = FALSE)
+```
+<p align="justify">
+O teste confirmou haver diferença nas médias entre os grupos. O grupo **sem**
+doença cardíaca apresenta a média de idade superior (~ 56anos) ao grupo **com**
+doença cardíaca (~52 anos)
+</p>
+
+```{r warning=FALSE}
+t.test(ha$age ~ ha$output, var.equal=F)
+```
+
+### Chance de Doença cardíaca, olhando apenas para a idade (age)
+<p align="justify">
+Com base no histograma de proporções e na tabela podemos observar que a faixa de idade
+entre 25 - 45 anos temos uma proporção de 75% de pacientes com doença cardíaca. 
+A partir dos 45 anos a proporção de pacientes com doença cardíaca diminui atingido o 
+proporção mínima de 37% e 39% (na faixa de 55 - 60 anos e 60 - 65 anos, respectivamente)
+<p/>
+
+```{r warning=FALSE, message=FALSE}
+# Funções Criadas no início da seção
+grafico_proporcao(coluna = ha$age, breaks = c(25,39,45,50,55,60,65,77), eixox = "Idade")
+    tabela_proporcao(coluna = ha$age, breaks = c(25,39,45,50,55,60,65,77)) |> 
+      knitr::kable()
+
+```
+
+
 

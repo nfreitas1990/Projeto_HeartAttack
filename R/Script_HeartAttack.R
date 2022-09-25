@@ -61,27 +61,6 @@ ha <- readr::read_csv(file = "data-raw/heart.csv")
   
   
 
-# -Variáveis do banco de dados
-  
-  # Age
-  # I. Maior parte dos dados está na faixa do 50-59 anos
-  ha |> 
-    mutate(
-      idade = cut(age, breaks = c(20, 29, 39, 49, 59, 69, 79, 89))) |> 
-    group_by(idade) |> 
-    summarise(
-      n = n()) |> 
-    ggplot(aes(y = n, x = idade, label = n))+
-    geom_bar(stat = "identity", alpha = 1/2, fill= "orange") +    
-    geom_label(position = position_stack (vjust = 0.85),alpha = 0.8, 
-               colour = "darkgray", fontface = "bold", show_guide  = F)+ 
-    scale_y_continuous(breaks=NULL)+
-    scale_x_discrete(labels = c("20-29","30-39","40-49","50-59","60-69",">70"))+
-    #scale_x_discrete(labels = seq(from = 20, to = 80, 10) )+
-    meu_tema
- 
-  
-  
   
 # Objetivo ----------------------------------------------------------------
 # Verificar os preditores que podem impactar (ou não) nas chances de 
@@ -214,10 +193,29 @@ ha <- readr::read_csv(file = "data-raw/heart.csv")
 # Idade -------------------------------------------------------------------
   # age  - age vs output
   
+  # I. Maior parte dos dados está na faixa do 50-59 anos
+  ha |> 
+    mutate(
+      idade = cut(age, breaks = c(20, 29, 39, 49, 59, 69, 79, 89))) |> 
+    group_by(idade) |> 
+    summarise(
+      n = n()) |> 
+    ggplot(aes(y = n, x = idade, label = n))+
+    geom_bar(stat = "identity", alpha = 1/2, fill= "orange") +    
+    geom_label(position = position_stack (vjust = 0.85),alpha = 0.8, 
+               colour = "darkgray", fontface = "bold", show_guide  = F)+ 
+    scale_y_continuous(breaks=NULL)+
+    ylab(" ")+
+    xlab("Idade")+
+    scale_x_discrete(labels = c("20-29","30-39","40-49","50-59","60-69",">70"))+
+    #scale_x_discrete(labels = seq(from = 20, to = 80, 10) )+
+    meu_tema 
+  
+  
  # BoxPlot
     ha |> 
       ggplot(aes(x = output, y = age))+
-      geom_boxplot(fill = "orange", alpha = 0.3)+
+      geom_boxplot(fill = "lightblue", alpha = 0.3)+
       scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
       xlab ("Doença Cardíaca")+
       ylab("Idade")+
@@ -225,7 +223,18 @@ ha <- readr::read_csv(file = "data-raw/heart.csv")
     # > Menor chance de ataque: em torno de 60 anos
     # > Maior chance de ataque: em torno de 50
   
- # Histograma: Gráfico de Proporções de Ocorrervs Não Ocorrer
+  # Teste T
+    # Pressuposto 1. Homogeneidade de variancias
+    # Ho: variâncias iguais
+    car::leveneTest(ha$age ~ ha$output) 
+    
+    # Presuposto 2. Teste de normalidade
+    car::qqPlot(ha$age)
+    t.test(ha$age ~ ha$output, var.equal=F)
+   #> O teste de Welch confirma que existe difenrença entre os grupos 
+    
+ 
+# Histograma: Gráfico de Proporções de Ocorrervs Não Ocorrer
     grafico_proporcao(coluna = ha$age, bins = 10, eixox = "Idade")
     view(tabela_proporcao(coluna = ha$age, breaks = 20))
     
