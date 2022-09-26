@@ -1,6 +1,6 @@
 ---
 title: "Heart Attack"
-author: "Document Author"
+author: "Natália Freitas"
 date: "`r Sys.Date()`"
 output:
   prettydoc::html_pretty:
@@ -11,46 +11,55 @@ output:
 # Contextualização
 
 <p align="justify">
-
 O infarto agudo do miocárdio, conhecido como ataque cardíaco (no inglês *Heart Attack*), está entre uma das doenças cardiovasculares mais mortais. Geralmente ocorre quando a circulação ou o fluxo sanguíneo para o coração é interrompido, fazendo com que o coração não receba oxigênio. Leva apenas de seis a oito minutos sem oxigênio para que o músculo cardíaco pare de funcionar, levando o indivíduo a morte.
-
 </p>
 
 <p align="justify">
-
 No Brasil, em 2021, estima-se que 230 mil pessoas morreram por doenças cardiovasculares, e destes, 73.035 mil decorrentes de infarto ([CNN](https://www.cnnbrasil.com.br/saude/no-brasil-mais-de-230-mil-pessoas-morreram-por-doencas-cardiovasculares-em-2021/),2021).
-
 </p>
 
 <br>
 
 <center>
 
-## E se pudéssemos predizer as pessoas que estão mais propensas a sofrer ataques cardíacos?
+## E se pudéssemos predizer quais pessoas estão propensas a sofrer ataques cardíacos?
 
 </center>
 
 </br>
 
 <p align="justify">
-
 Neste contexto, este estudo surge com o objetivo de desenvolver um sistema de 
-predição para identificar, com base em características biológicas,  
-indivíduos com maior propensão a sofrer ataque cardíaco. Além de ajudar 
+predição para identificar, com base em características biológicas, os indivíduos 
+com maior propensão a sofrer ataque cardíaco. Além de ajudar 
 no diagnóstico, possibilita melhor compreensão do problema ao mapear 
 as características que mais se associam ao risco de ataque cardíaco.
-
 </p>
 <br>
 <font color="#1BA6BD" size="3px">
 <p align="justify">
-Código para as análises pode ser acessado [GitHub nfreitas1990](https://github.com/nfreitas1990/Projeto_HeartAttack). Sugiro o acompanhamento das análises com o código aberto em  [Script_HeartAttack.R](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/R)
-ou em .Rmd [Projeto_HeartAttack.Rmd](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/docs). Pois alguns códigos foram ocultados para melhorar a visualização.
+**Código utilizados para a análises pode ser acessado em** [GitHub nfreitas1990](https://github.com/nfreitas1990/Projeto_HeartAttack). Assim
+como demais materiais utilizados, inclusive a base de dados.
 </p>
 </font>
 </br>
 
-## Pacotes
+
+## Guia da Análise
+    1. Carregamento dos Pacotes
+    2. Carregamento dos Dados
+    3. Conhecendo os Dados
+        3.1 Presença de Valores faltantes
+        3.2 Tipologia
+        3.3 Colinearidade
+    4. Análise Descritiva
+        4.1 Criação de Funções
+        4.2 Avaliação de cada variável individualmente
+    5. Modelagem Preditiva
+    6. Testes do Modelo
+       
+    
+## 1. Pacotes
 
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse) 
@@ -61,7 +70,7 @@ library(skimr)
 library(tidymodels)
 ```
 
-## Dados
+## 2. Dados
 
 <p align="justify">
 
@@ -97,7 +106,7 @@ meu_tema <- theme(legend.position = "none",
 
 
 
-## Conhecendo os Dados
+## 3. Conhecendo os Dados
 
 ```{r include=FALSE }
 tab_sig<- data.frame(Siglas = colnames(ha),
@@ -110,7 +119,7 @@ tab_sig<- data.frame(Siglas = colnames(ha),
                                     "**Eletrocardiográficos** (repouso):<br>1|normal;<br>2|tendo anormalidade da onda ST-T;<br>3|provável hipertrofia ventricular esquerda",
                                     "**Frequência cardíaca máxima** ",
                                     "**Angina induzida por exercício**:<br>1|Sim;<br> 0|Não",
-                                    "**Depressão de ST induzida por exercício",
+                                    "**Depressão de ST induzida por exercício**",
                                     "**Inclinação do segmento ST**:<br>0|sem inclinação;<br>1|plano;<br>2|descendo",
                                     "**Número de grandes vasos**",
                                     "**Talassemia**:<br>0|nulo;<br> 1|defeito corrigido;<br> 2|normal;<br> 3|defeito reversível",
@@ -127,7 +136,7 @@ tab_sig<- data.frame(Siglas = colnames(ha),
   knitr::kable()
 ```
 
-## Avaliando a presença de valores faltantes
+## 3.1 Avaliando a presença de valores faltantes
 
 <p align="justify">
 
@@ -139,15 +148,12 @@ Não foram encontrados valores `NA`em nenhuma coluna da tabela `ha`.
 table(map(ha, is.na)) |> 
       knitr::kable()
 ```
-
-# 1. Análise Descritiva
-
-## Tipologia
+## 3.2 Tipologia
 
 <p align="justify">
 
 As variáveis foram avaliadas quanto ao tipo, categórica ou numérica, e foram 
-transformadas para que respeitasse a sua natureza. As variáveis 
+transformadas para que respeitassem a sua natureza. As variáveis 
 `sex`, `cp`, `fbs`, ` restecg`, `exng`, `slp`, `thall` e `output` foram 
 transformadas para categoricas.  
 
@@ -163,7 +169,7 @@ Os dados obtidos correspondem aos registros referentes a `r nrow(ha)` pacientes.
   skimr::skim(ha)
 ```
 
-## Colinearidade
+## 3.3 Colinearidade
 <p align="justify">
 As variáveis numéricas foram testadas para evitar colinearidade. O método de 
 Spearman foi escolhido em detrimento do método de Pearson para evitar assumir
@@ -176,14 +182,21 @@ pressuposto com relação a normalidade dos dados.
   corrplot.mixed(cor(ha_numeric, method = "spearman"),lower = "number", upper = 'color')
   
 ```
-A análise indica que existe baixa correlação (<0.45) entre as variáveis.
-Indicando que todas podem ser utilizadas para as análises futuras, sem incorrer
+
+O teste de Spearman evidenciou baixa correlação entre os pares de variáveis (<0.45).
+Indicando que podem ser utilizadas simultâneamente nas análises futuras, sem incorrer
 em risco de colinearidade.
 </p>
 
-# Criando funções que serão usadas nesta seção
+
+
+# 4. Análise Descritiva
+
+
+# 4.1 Criando funções que serão usadas nesta seção
 ```{r}
-# Função grafico_proporcao ( ) :para Histograma das proporções
+# Função grafico_proporcao ( ): Cria Histograma das proporções de pacientes 
+# com e sem doença cardíaca
   grafico_proporcao <- function(coluna, bins=NULL, breaks = NULL, eixox = NULL){
     
     ha |> 
@@ -202,7 +215,8 @@ em risco de colinearidade.
       geom_point() +
       meu_tema}
     
-    # Função tabela_proporcao ( ): para tabela das proporções
+# Função tabela_proporcao ( ): Cria tabela com as proporções de pacientes 
+# com e sem doença cardíaca
   
   tabela_proporcao <- function(coluna, breaks = NULL ){
     ha |> 
@@ -217,11 +231,11 @@ em risco de colinearidade.
 ```
 
 
-# Variável: Idade (age)
+# i. Idade (`age`)
 <p align="justify">
 Os dados analisados representam, em sua maioria, pacientes que estão na 
-faixa de 50-59 anos de idade. Os pacientes possuem idade acima de 30 anos, 
-apenas 1 paciente na faixa de 20-29 anos. 
+faixa de 50-59 anos de idade. Não existe paciente com menos de 30 anos de idade,
+com exceção de 1 paciente na faixa de 20-29 anos. 
 </p>
 
 ```{r warning=FALSE}
@@ -242,27 +256,36 @@ ha |>
     meu_tema 
 ```
 <p align="justify">
-Com base no BoxPlot entre a idade e output, variável que representa a chance de
-doença cardíaca, observamos que os pacientes com **menor** chance de doença cardíaca
-tem idade maior do que o grupo com **maior** chance de doença cardíaca.
+Com base na análise visual do Box Plot entre a idade (`age`) e `output`, variável que 
+representa a chance de doença cardíaca, observamos que os pacientes com
+**menor chance** doença cardíaca tem média de idade maior do que o grupo com
+**maior chance** doença cardíaca.
 </p>
 
 ```{r}
 ha |> 
       ggplot(aes(x = output, y = age))+
       geom_boxplot(fill = "lightblue", alpha = 0.3)+
-      scale_x_discrete(labels = c("Não", "Sim"))+
+      scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
       xlab ("Doença Cardíaca")+
       ylab("Idade")+
       meu_tema
     
 ```
 <p align="justify">
-Para confirmar a análise visual, foi realizado o Teste de Welch. Este teste
-é similar ao T-Student só que para dados **sem** homogeneidade na variância, como 
-é caso em questão. E será usado para confirmar se existe diferença nas médias 
-dos grupos **com** e **sem** doença cardíaca.
+Para confirmar a análise visual, foi avaliado: a Homogeneidade das variâncias e 
+a normalidade dos dados. Estes testes de pressupostos indica que o Teste de Welch
+é preferível em detrimento do teste T-Student para avaliar a diferença nas médias,
+devido a **não** homogeneidade das variâncias.</p> 
+<p align="justify">
+O teste confirmou haver diferença significativa nas médias entre os grupos. 
+O grupo com **menor chance** doença cardíaca apresenta a média de idade superior 
+(~ 56 anos) ao grupo com **maior chance** doença cardíaca (~52 anos).
 </p>
+<font color="#1BA6BD" size="3px">
+<p align="justify">
+***Obs: Nas demais variáveis utilizarei apenas avaliação visual. 
+</font></p>
 
 ```{r}
 ## Testando pressupostos da Análise
@@ -271,34 +294,684 @@ dos grupos **com** e **sem** doença cardíaca.
     car::leveneTest(ha$age ~ ha$output) 
 
 # Presuposto 2. Teste de normalidade
-  # Inspeção visual
+  # Inspeção visual - Aceita
     car::qqPlot(ha$age, grid = FALSE)
-```
-<p align="justify">
-O teste confirmou haver diferença nas médias entre os grupos. O grupo **sem**
-doença cardíaca apresenta a média de idade superior (~ 56anos) ao grupo **com**
-doença cardíaca (~52 anos)
-</p>
-
-```{r warning=FALSE}
+    
+# Teste de Weltch - se diferencia do T-Student pelo argumento "var.equal = F"
 t.test(ha$age ~ ha$output, var.equal=F)
 ```
 
-### Chance de Doença cardíaca, olhando apenas para a idade (age)
+
+### Chance de Doença cardíaca, com base apenas na idade (age)
 <p align="justify">
-Com base no histograma de proporções e na tabela podemos observar que a faixa de idade
-entre 25 - 45 anos temos uma proporção de 75% de pacientes com doença cardíaca. 
+Com base no histograma e na tabela de proporções, podemos observar que 75% 
+dos pacientes que estão na faixa de idade entre 25-45 anos possui doença cardíaca.
 A partir dos 45 anos a proporção de pacientes com doença cardíaca diminui atingido o 
 proporção mínima de 37% e 39% (na faixa de 55 - 60 anos e 60 - 65 anos, respectivamente)
 <p/>
 
 ```{r warning=FALSE, message=FALSE}
 # Funções Criadas no início da seção
-grafico_proporcao(coluna = ha$age, breaks = c(25,39,45,50,55,60,65,77), eixox = "Idade")
+    grafico_proporcao(coluna = ha$age, breaks = c(25,39,45,50,55,60,65,77), eixox = "Idade")
     tabela_proporcao(coluna = ha$age, breaks = c(25,39,45,50,55,60,65,77)) |> 
       knitr::kable()
 
 ```
+<p align="justify">
+Com base no modelo de regressão logistico individual, podemos inferir que a `age`
+está associada com a chance de ter doença cardíaca (p<0.05). E que **o aumento** 
+**em uma unidade de `age`implica na redução em 5% da chance de ter doença cardíaca.**
+(OR: 1-0.95 = 0.05).
+<p/>
+
+```{r}
+model_age <- glm(output ~age, data=ha, family = "binomial")
+gtsummary::tbl_regression(model_age, exponentiate = TRUE)
+```
+
+<br>
+
+# ii. Pressão Arterial (`trtbps`)
+
+<p align="justify">
+A análise visual não indica diferença entre grupos com  **menor** e **maior** chance de doença 
+cardíaca. Como consequência, inicialmente esta variável não parece interferir nas
+chances do paciente ter ou não doença cardíaca.
+</p>
+```{r}
+ ha |> 
+    ggplot(aes(x = output, y = trtbps))+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
+    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+    xlab ("Doença Cardíaca")+
+    meu_tema
+```
+
+<p align="justify">
+A pressão arterial na faixa entre 93.9 - 105 possui maior proporção de pacientes 
+com doença cardíaca (85%). Cabe ressaltar que esta faixa apresenta,
+comparativamente com as demais, um número baixo de observações, o que prejudica um
+pouco a interpretação. Após esta faixa (93.9 - 105) a proporção de pacientes com 
+doença cardíaca se mantém constante (em torno de 50%), diminuindo somente acima de 158 de pressão arterial.
+</p>
+
+```{r}
+grafico_proporcao(coluna = ha$trtbps, breaks = c(93.9,105,
+                                                   115,126,136,147,
+                                                   158,168,200),
+                    eixox = "Pressão Arterial")
+tabela_proporcao(coluna = ha$trtbps, breaks = c(93.9,105,
+                                                  115,126,136,147,
+                                                  158,168,200,330)) |> 
+    knitr::kable()
+```
+<p align="justify">
+Após regredir a variável `output` em função  `trtbps`, notamos que  a pressão 
+arterial em repouso é uma variável importante (p<0.05).Embora **o aumento da pressão** 
+**reduza a chance de doença cardíaca em apenas 2% a cada unidade**.
+</p>
+ 
+```{r}
+model_trtbps <- glm(output ~trtbps, data=ha, family = "binomial")
+  summary(model_trtbps)
+  gtsummary::tbl_regression(model_trtbps, exponentiate = TRUE)
+```
+
+
+# iii. Colesterol (`chol`)
+<p align="justify">
+  O colesterol, embora sabidamente importante de acordo com a literatura, não 
+  apresentou diferença visual entre os grupos com **menor** e **maior** chance de doença cardíaca.
+  De acordo com o modelo de regressão, essa variável não altera a chance 
+  de doenças cardíacas (p>0.05; OR= 1). 
+</p>
+```{r}
+ha |> 
+    ggplot(aes(x = output, y = chol))+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
+    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+    xlab ("Doença Cardíaca")+
+    meu_tema
+```
+
+
+```{r}
+grafico_proporcao(coluna = ha$chol, bins = 15, eixox = "Colesterol")
+tabela_proporcao(coluna = ha$chol, breaks = 15) |> 
+  knitr::kable()
+```
+```{r}
+  model_chol <- glm(output ~ chol, data=ha, family = "binomial")
+  summary(model_chol)
+  gtsummary::tbl_regression(model_chol, exponentiate = TRUE) 
+   
+```
+<br>
+
+# iv. Frequencia cardíaca Máxima (`thalachh`)
+
+<p align="justify">
+A análise visual sugere que valores de frequência cardíaca máxima maior do que 150
+tem **maior** chance de doença cardíaca. Enquanto valores entre 125-150 
+tem **menor** chance de doença cardíaca.
+</p>
+```{r}
+ ha |> 
+    ggplot(aes(x = output, y = thalachh))+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
+    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+    xlab ("Doença Cardíaca")+
+  meu_tema
+```
+<p align="justify">
+A proporção de pacientes com doenças cardíacas aumenta conforme o aumento 
+nos valores de frequência cardíaca máxima, atingindo proporções acima de 60% 
+a partir da faixa 147-158.
+  </p>
+```{r}
+  grafico_proporcao(coluna = ha$thalachh, bins = 12, eixox = "Freq. Cardíaca Max.")
+  tabela_proporcao(coluna = ha$thalachh, breaks = 12) |> 
+    knitr::kable()
+```
+<p align="justify">
+De acordo com o modelo logístico individual, a frequência cardíaca máxima (`thalachh`) influencia
+na chance de doenças cardiacas (p< 0.05). **O aumento na frequência cardiaca** 
+**máxima, aumenta a chance do paciente ter doença cardíaca em 4% a cada unidade**. 
+</p>  
+
+```{r}
+model_thalachh <- glm(output ~ thalachh, data=ha, family = "binomial")
+  summary(model_thalachh)
+  gtsummary::tbl_regression(model_thalachh, exponentiate = TRUE)
+```
+<br>
+
+# v. Depressão de ST induzida por exercício (`oldpeak`)
+
+ <p align="justify">
+ A inspeção visual indica diferença entre os grupos com **menor** e **maior**
+ chance de doença cardíaca. O grupo com maior chance de doença possuem valores
+ de `oldpeack`entre 1-0. Enquanto o grupo com menor chance apresenta a média dos valores 
+ acima de 1.</p>
+ 
+```{r}
+ha |> 
+    ggplot(aes(x = output, y = oldpeak))+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
+    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+    xlab ("Doença Cardíaca")+
+    meu_tema
+  
+```
+
+<p align="justify">
+Com valores menores de depressão de st induzida por exercício, observamos alta 
+proporção de pacientes com doença cardíaca (74%). A partir de valores de `oldpeak`
+maiores do que 2.07, a proporção de pacientes doentes reduz para menos de 30% em cada faixa. 
+</p>
+
+```{r}
+tabela_proporcao(coluna = ha$oldpeak, breaks = c(-0.0061, 0.517,1.03,1.55,
+                                                   2.07,2.58,3.1,3.62,6.21)) |> 
+  knitr::kable()
+grafico_proporcao(coluna = ha$oldpeak, breaks = c(-0.0061, 0.517,1.03,1.55,
+                                                    2.07,2.58,3.1,3.62,6.21)) 
+
+```
+<p align="justify">
+A Depressão de ST tem forte influência na chance de doença cardíaca.
+**Ao aumentarmos os valores de `oldpeak` em 1 unidade, há uma redução de 61%**
+**na chance de ocorrência de doença cardiaca** (OR:0.39).
+</p>
+
+```{r}
+  # Modelo individual
+  model_oldpeak <- glm(output ~ oldpeak, data=ha, family = "binomial")
+  summary(model_oldpeak)
+  gtsummary::tbl_regression(model_oldpeak, exponentiate = TRUE)
+  
+```
+
+# vi. Número de grandes vasos (`caa`)
+<p align="justify">
+O aumento no número de grande vasos diminui a chance de doenças cardíacas.
+Com apenas 1 vaso temos proporção maior de pacientes com doença (0.62%) 
+quando comparadas aos demais grupos que possuem mais de 1 vaso. 
+Importante ressaltar que apesar da classe "4 vasos" ter
+o maior percentual de pacientes com doença (80%; Tabela de proporções),
+esta classe foi desconsiderada para essa interpretação devido a baixa 
+quantidade de registros.
+</p>
+```{r}
+  grafico_proporcao(coluna = ha$caa, bins = 4)
+  tabela_proporcao(coluna = ha$caa, breaks = 4) |> 
+    knitr::kable()
+```
+
+<p align="justify">
+A partir do modelo de regressão logístico, podemos concluir que o número de 
+grandes vasos influencia fortemente na chance de doença cardiaca. **O aumento**
+**no número de vasos reduz a chance de doença cardiaca em 60% a cada unidade**.
+ </p> 
+  
+```{r}
+model_caa <- glm(output ~ caa, data=ha, family = "binomial")
+  summary(model_caa)
+  gtsummary::tbl_regression(model_caa, exponentiate = TRUE)
+```
+
+
+# vii. Sexo (`sex`)
+
+<p align="justify">
+Observamos maior proporção de mulheres (0) com doença cardíaca do que homens (1)
+conforme pode ser observado a seguir.
+</p>
+```{r warning=FALSE}
+graf_proporcao_categoricos <- ha |> 
+    select(is.factor) |> 
+    map(grafico_proporcao)
+
+```
+
+```{r}
+graf_proporcao_categoricos$sex
+```
+
+**A chance de doença cardíaca no sexo masculino é 73% menor do que no sexo feminino**
+
+```{r}
+model_sex <- glm(output ~ sex, data=ha, family = "binomial")
+  summary(model_sex)
+  gtsummary::tbl_regression(model_sex, exponentiate = TRUE)
+```
+
+
+# viii Tipo de dor no peito (`cp`)
+
+<p align="justify">
+Observamos menor proporção de doença cardíaca em pacientes com
+tipo de dor no peito *angina típica* (0), quando comparado com os demais.
+</p>
+
+```{r}
+graf_proporcao_categoricos$cp 
+```
+
+<p align="justify">  
+**Ter Dor no peito do tipo *angina atipica* (1) aumenta em 12 vezes a chance de doença**
+**cardíaca quando comparada *angina tipica* (0); aumenta em 10 vezes quando a dor é **
+**do tipo *não angina*; e em 6 vezes quando *assintomático*.** 
+</p>
+ 
+```{r}
+model_cp <- glm(output ~ cp, data=ha, family = "binomial")
+  summary(model_cp)
+  gtsummary::tbl_regression(model_cp, exponentiate = TRUE)
+```
+ 
+     
+# ix. Glicemia (`fbs`)
+
+<p align="justify"> 
+ Proporção de pacientes com **menor** e **maior** chance de doença cardíaca não
+ parece ser modificada pela glicemia.
+</p>
+
+```{r}
+graf_proporcao_categoricos$fbs
+```
+ 
+ <p align="justify">
+ De acordo com o modelo de regressão logístico, **a glicemia não parece influenciar**
+ **a chance de doenças cardíacas** (p>0.05).
+</p>
+```{r}
+model_fbs <- glm(output ~ fbs, data=ha, family = "binomial")
+  summary(model_fbs)
+  gtsummary::tbl_regression(model_fbs, exponentiate = TRUE)
+```
+ 
+# x. Eletrocardiográficos (`restecg`)
+
+<p align="justify"> 
+Pacientes com Eletrocardiograma *normal* (0) possuem menor proporção de doença cardíaca 
+do que pacientes com *anormalidade da onda ST-T* (1). A categoria de *hipertrofia ventricular* (2)
+não será considerada na interpretação por apresentar poucas observações.
+</p>
+
+```{r}
+table(ha$restecg) |> 
+  knitr::kable(col.names = c("Categorias", "Quantidade de Observações"), align = "l")
+  
+graf_proporcao_categoricos$restecg 
+```
+
+<p align="justify">
+**Os Eletrocardiográficos com *anormalidade da onda ST-T* (1) aumenta em 99% a** 
+**chance de doença** quando comparado com eletrocardiografico *normal* (0). A categoria 
+de *hipertrofia ventricular* (2) não será considerada na interpretação 
+por apresentar poucas observações.
+</p>
+
+```{r}
+model_restecg <- glm(output ~ restecg, data=ha, family = "binomial")
+  summary(model_restecg)
+  gtsummary::tbl_regression(model_restecg, exponentiate = TRUE)
+```
+
+ 
+# xi. Inclinação do segmento ST (`slp`)
+
+<p align="justify"> 
+A Inclinação *descendo* (2) apresenta maior proporção de pacientes com doença 
+cardíaca do que as demais.
+</p>
+
+```{r}
+ graf_proporcao_categoricos$slp
+```
+
+<p align="justify"> 
+A inclinação do segmento *descendo* (2) **aumenta 4 vezes** a chance de doença cardíaca 
+quando comparado com pacientes *sem inclinação* (0). A inclinação do segmento na 
+categoria *plano* (1), **reduz a chance de doença em 28%** quando comparada aos 
+pacientes *sem inclinação* (0)
+</p>
+
+```{r}
+model_slp <- glm(output ~ slp, data=ha, family = "binomial")
+  summary(model_slp)
+  gtsummary::tbl_regression(model_slp, exponentiate = TRUE)
+```
+
+# xii. Talassemia (`thall`)
+
+<p align="justify"> 
+A categoria *Talassemia Normal* (2) é a que apresenta maior proporção de 
+pacientes com doença cardíaca.
+</p>
+
+```{r}
+graf_proporcao_categoricos$thall
+```
+  
+<p align="justify">  
+Antes da análise de regressão, vamos retirar a categoria *nulo* (0), que possui poucas
+ observações e está sendo usada como categoria de referência na análise.
+</p>
+ 
+```{r}
+  # Retirando classe 0
+   ha <-  ha |> 
+               filter(thall != 0)
+```
+ 
+<p align="justify">
+A Talassemia *normal* (2), **aumenta em 7 vezes** a chance de doença cardíaca quando 
+comparada com a categoria *defeito corrigido* (1). Já a categoria *defeito reversível* (3)
+**reduz em 37%** a chance de doença cardíaca quando comparada a categoria de referência 
+*defeito corrigido* (1) 
+</p>
+
+```{r}
+model_thall <- glm(output ~ thall, data=ha, family = "binomial")
+  summary(model_thall)
+  gtsummary::tbl_regression(model_thall, exponentiate = TRUE)
+```
+<p align="justify">
+# Conclusões sobre a **Avaliação Individual** da influência das variáveis na 
+# chance de doenças cardíacas
+
+<font color="#1BA6BD" size="3px">
+<p align="justify">
+**Importante lembrar que** ao serem avaliadas dentro de um mesmo modelo a resposta
+aqui apresentada possívelmente sofrerar modificações. Esta análise individual
+foi realizada como uma tentativa de selecionar variáveis com maior importância
+para compor o modelo múltiplo apresentado posteriormente.
+</font></p>
+
+ 
+ - Idade (`age`) **reduz em 5%** a chance de doença cardíaca a cada unidade;
+ 
+ - Pressão Arterial (`trtbps`) **reduz em 2%** a chance de doença cardíacaa cada unidade;
+ 
+ - Frequência Cardíaca Máxima (`thalachh`) **aumenta em 4%** a chance de doença cardíaca a cada unidade;
+ 
+ - Depressão de ST induzida por exercício (`oldpeak`) **reduz em 61%** a chance de doença cardíaca a cada unidade;
+ 
+ - Número de grandes vasos (`caa`) **reduz em 60%** a chance de doença cardíaca a cada unidade;
+ 
+ - Sexo (`sex`): A chance de doença cardíaca no sexo masculino é 73% menor do que no sexo feminino;
+ 
+ - Tipo de dor no peito (`cp`): *Angina atipica* **aumenta em 12 vezes** a chance de doença 
+ cardíaca quando comparada *Angina tipica*; **aumenta em 10 vezes** quando a dor 
+ é do tipo *não angina*; e **aumenta em 6 vezes** quando *assintomático*;
+ <p align="justify"
+ - Eletrocardiográficos (`restecg`): Eletrocardiográficos com *anormalidade da onda ST-T* **aumenta em 99%** a chance de doença quando comparado com eletrocardiografico *normal*;
+ </p>
+ <p align="justify"
+ - Inclinação do segmento ST (`slp`): A inclinação do segmento *descendo* **aumenta 4 vezes**
+ a chance de doença cardíaca quando comparado com pacientes *sem inclinação*.
+ A inclinação do segmento na categoria *plano*, **reduz em 28% ** a chance de 
+ doença quando comparada aos pacientes *sem inclinação*;
+ </p>
+ <p align="justify"
+ - Talassemia (`thall`) *normal* **aumenta em 7 vezes** a chance de doença cardíaca
+ quando comparada com a categoria *defeito corrigido*. Já a categoria defeito 
+ *reversível* **reduz em 37%** a chance de doença cardíaca quando comparada 
+ a categoria de referência *defeito corrigido*;
+ </p>
+  - Colesterol (`chol`) e Glicemia (`fbs`) não influenciou na chance de doenças cardíacas (p>0.05).
+ 
+  
+ 
+ 
+## 5. Modelagem preditiva 
+
+# _. Funções Criadas para serem usadas nesta seção
+```{r}
+# Função analise_predicao ( ): para predizer valores de acordo com modelo da regressao
+  analise_predicao <- function (modelo){
+    fitted_results <- dismo::predict(modelo, newdata = data_test, type = "response")
+    fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
+    
+    data_test_pred <- data_test |> 
+      add_column(fitted =  fitted_results,
+                 fitted_cat = fitted_results_cat ) |>
+      mutate(fitted_exp = exp(fitted_results))
+    print(data_test_pred)}
+  
+  
+#Função desempenho ( ): para calcular as metricas de desempenho dos modelos
+  
+  desempenho <-  function(modelo){
+    fitted_results <- dismo::predict(modelo, newdata = data_test, type = "response")
+    fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
+    
+    data_test_pred <- data_test |> 
+      add_column(fitted =  fitted_results,
+                 fitted_cat = fitted_results_cat ) |>
+      mutate(fitted_exp = exp(fitted_results))
+    
+    data_test_pred <- data_test_pred |> 
+      mutate(fitted_cat = as_factor(fitted_cat))
+    
+    metricas <- caret::confusionMatrix(data = data_test_pred1$output,
+                                       reference = data_test_pred1$fitted_cat)
+    print(metricas)}
+```
+
+
+# i. Separação dos dados para Calibração e Validação do Modelo
+
+<p align="justify">
+Os dados referentes a `r nrow(ha)` pacientes foram separados aleatoriamente, 80% dos dados
+foram utilizados para calibrar e 20% para validar o modelo na próxima etapa.
+</p>
+
+```{r}
+set.seed(1)
+  grupo = dismo::kfold(ha, 5)
+  data_train <- ha[grupo !=1,] #80% (4/5 dos registros)
+  data_test <- ha[grupo ==1,] #20% (1/5 dos registros)
+```
+
+ 
+# ii. Modelo Logístico Completo
+
+<p align="justify">
+O modelo contendo todas as variáveis foi utilizado como ponto de partida.
+Neste modelo, algumas variáveis foram significativas (p<0.05):
+</p>
+ `sex`
+ `cp`
+ `oldpeak`
+ `caa`
+ `exng`
+ 
+```{r}
+modelo_completo <- glm(output ~ ., data = data_train, family = binomial)
+ summary(modelo_completo)
+ gtsummary::tbl_regression(modelo_completo, exponentiate = TRUE)
+```
+  
+# iii. Verificar o VIF do modelo
+ <p align="justify">
+ O fator VIF indica baixa colinearidade entre as variáveis. 
+ </p>
+ 
+```{r}
+  car::vif(modelo_completo) |> 
+  knitr::kable(align = "l")
+  
+```
+# iv. Testar o Modelo com a Curva ROC
+```{r include=FALSE}
+require (pROC)
+roc_completo <- plot.roc(data_train$output, fitted(modelo_completo))
+```
+
+```{r}
+plot(roc_completo,
+     print.auc = TRUE,
+     auc.polygon = TRUE,
+     grud = c(0.1,0.2),
+     grid.col = c("green", "red"),
+     max.auc.polygon = TRUE,
+     auc.polygon.col = "lightblue",
+     print.thres = TRUE)
+```
+
+  
+# Conclusão: 
+<p>
+- A chance de doença cardíaca no sexo masculino é 74% menor do que no sexo feminino;
+- Dores no peito do tipo *não angina* e *assintomático* aumenta em 6 vezes a chance
+  de doença cardíaca quando comparado ao tipo *angina típica*.
+- Depressão de ST induzida por exercício reduz em 43% a chance de doença cardíaca 
+  a cada unidade de incremento;
+- O aumento no Número de grandes vasos reduz a chance de doença cardíaca 
+  em 62% a cada unidade de incremento. 
+- A Talassemia com *defeito reversível* reduz em 82% a chance de doença cardíaca
+  quando comparada a Talassemia *nula*;
+</p>
+
+# Validação do Modelo Completo
+
+<p align="justify">
+Validação da capacidade preditiva do modelo em dados externos, ou seja, dados
+que não foram utilizados para a calibração do modelo.
+Construção da matriz de confusão para o cálculo das métricas de desemepnho.
+</p>
+```{r}
+# Predicao com dados teste
+      fitted_results <- dismo::predict(modelo_completo, newdata = data_test, type = "response")
+      fitted_results_cat <- ifelse(fitted_results > 0.7,1,0) #threshold
+      
+      
+# Unir: Observados vs Preditos
+      data_test_pred <- data_test |> 
+                      add_column(fitted =  fitted_results,
+                                 fitted_cat = fitted_results_cat ) |>
+                      mutate(fitted_exp = exp(fitted_results))
+
+      data_test_pred <- data_test_pred |> 
+        mutate(fitted_cat = as_factor(fitted_cat))
+      
+# Metricas Desempenho: Tabela de confusão
+      caret::confusionMatrix(data = data_test_pred$output, reference = data_test_pred$fitted_cat) 
+
+```
+# Conclusão: 
+O modelo Completo teve acurácia de 83%, indicando bom desempenho preditivo. As 
+demais métricas, especificidade e sensibilidade, também apresentaram bons desempenhos
+(acima de 75%).
+
+
+# Modelos Alternativos 
+
+# Modelo 1: 
+Retendo somente as variáveis que foram significativas no modelo completo.
+
+```{r}
+ modelo1 <- glm(output ~ sex + cp+ oldpeak + caa + exng, data = data_train, family = binomial)
+ summary(modelo1)
+ gtsummary::tbl_regression(modelo1, exponentiate = TRUE)
+```
+```{r}
+# Predicao com dados teste
+      fitted_results1 <- dismo::predict(modelo1, newdata = data_test, type = "response")
+      fitted_results_cat1 <- ifelse(fitted_results1 > 0.7,1,0) #threshold
+      
+      
+# Unir: Observados vs Preditos
+      data_test_pred1 <- data_test |> 
+                      add_column(fitted =  fitted_results1,
+                                 fitted_cat = fitted_results_cat1 ) |>
+                      mutate(fitted_exp = exp(fitted_results1))
+
+      data_test_pred1 <- data_test_pred1 |> 
+        mutate(fitted_cat = as_factor(fitted_cat))
+
+# Metricas Desempenho: Tabela de confusão
+      caret::confusionMatrix(data = data_test_pred1$output, reference = data_test_pred1$fitted_cat) 
+```
+# Modelo 2: 
+
+<p align="justify">
+Retendo somente as variáveis consideradas importantes na Análise 
+individual realizada na etapa de Análise Descritiva. 
+As variáveis não significativas ou com baixa associação com chance
+de doença cardíaca (menos de 10% na redução ou no aumento) não foram consideradas.
+</p>
+
+```{r}
+modelo2 <- glm(output ~ sex+ cp+ thall+ oldpeak + caa + exng+ restecg + slp, data = data_train, family = binomial)
+summary(modelo2)
+gtsummary::tbl_regression(modelo2, exponentiate = TRUE)
+```
+
+```{r}
+# Predicao com dados teste
+      fitted_results2 <- dismo::predict(modelo2, newdata = data_test, type = "response")
+      fitted_results_cat2 <- ifelse(fitted_results2 > 0.7,1,0) #threshold
+      
+      
+# Unir: Observados vs Preditos
+      data_test_pred2 <- data_test |> 
+                      add_column(fitted =  fitted_results2,
+                                 fitted_cat = fitted_results_cat2 ) |>
+                      mutate(fitted_exp = exp(fitted_results2))
+
+      data_test_pred2 <- data_test_pred2 |> 
+        mutate(fitted_cat = as_factor(fitted_cat))
+
+# Metricas Desempenho: Tabela de confusão
+      caret::confusionMatrix(data = data_test_pred2$output, reference = data_test_pred2$fitted_cat)
+```
+
+# Comparação entre os três modelos
+
+<p align="justify">
+Ao analisar comparativamente os modelos, podemos notar que o **Modelo Completo**
+possui a maior acurácia. Entretanto, o **Modelo 2** possui o menor AIC e uma acurácia
+muito próxima da obtida com o Modelo Completo. Ao olharmos para o intervalo de 
+confiança, notamos que o Modelo 2 apresenta o limite inferior menor do que 
+70% de desempenho (0.6767, 0.8922), enquanto no Modelo Completo olimite inferior 
+do intervalo permace acima dos 70% (0.7148, 0.9171). Portanto, podemos escolher
+entre um Modelo mais simples, que seria o Modelo 2, ou o Modelo Completo, que 
+possui o desempenho preditivo ligeiramente melhor.
+</p>
+
+
+```{r include=FALSE}
+acuracia_completo <- mean(data_test_pred$fitted_cat != data_test_pred$output)
+acuracia_completo <- round(1-acuracia_completo, digits = 3)
+
+acuracia_1 <- mean(data_test_pred1$fitted_cat != data_test_pred1$output)
+acuracia_1 <- round(1-acuracia_1, digits = 3)
+      
+acuracia_2 <- mean(data_test_pred2$fitted_cat != data_test_pred2$output)
+acuracia_2 <- round(1-acuracia_2, digits = 3)
+```
+
+
+```{r}
+  
+bind_rows(Modelo = c("Modelo_Completo", "Modelo 1", "Modelo 2"),
+          AIC = as.numeric(c(modelo_completo$aic,
+                     modelo1$aic,
+                     modelo2$aic))) |> 
+  mutate(Acuracia = c (acuracia_completo,acuracia_1, acuracia_2)) |> 
+  knitr::kable()
+           
+  
+ 
+
+
+```
+
 
 
 

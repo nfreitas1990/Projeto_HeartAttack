@@ -274,13 +274,16 @@ gtsummary::tbl_regression(model_age, exponentiate = TRUE)
 
 # Pressão arterial --------------------------------------------------------
   # trtbps: vs output
+
+
   
-  # BoxPlot
-  ha |> 
-    ggplot(aes(x = output, y = trtbps))+
-    geom_boxplot()+
-    scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
-    xlab ("Doença Cardíaca")
+# BoxPlot
+ha |> 
+  ggplot(aes(x = output, y = trtbps))+
+  geom_boxplot(fill = "lightblue", alpha = 0.3)+
+  scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
+  xlab ("Doença Cardíaca")+
+  meu_tema
   # >  Parece não ter diferença entre as classes
   
   grafico_proporcao(coluna = ha$trtbps, bins = 10, eixox = "Pressão Arterial")
@@ -318,9 +321,10 @@ gtsummary::tbl_regression(model_age, exponentiate = TRUE)
   # BoxPlot
   ha |> 
     ggplot(aes(x = output, y = chol))+
-    geom_boxplot()+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
     scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
-    xlab ("Doença Cardíaca")
+    xlab ("Doença Cardíaca")+
+    meu_tema
   # > Não parece haver diferença significativa
   
   # Histograma:
@@ -343,9 +347,11 @@ gtsummary::tbl_regression(model_age, exponentiate = TRUE)
   # BoxPlot
   ha |> 
     ggplot(aes(x = output, y = thalachh))+
-    geom_boxplot()+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
     scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
-    xlab ("Doença Cardíaca")
+    xlab ("Doença Cardíaca")+
+    meu_tema
+  
   # > Parece que valores >150 tem maior chance
   #   valores entre 125-150 tem menor chance
   
@@ -375,9 +381,10 @@ gtsummary::tbl_regression(model_age, exponentiate = TRUE)
   # BoxPlot
   ha |> 
     ggplot(aes(x = output, y = oldpeak))+
-    geom_boxplot()+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
     scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
-    xlab ("Doença Cardíaca")
+    xlab ("Doença Cardíaca")+
+    meu_tema
   # > Parece haver diferença: Entre 0-1 maior chance
 
   # Histograma
@@ -411,9 +418,11 @@ gtsummary::tbl_regression(model_age, exponentiate = TRUE)
   # BoxPlot
   ha |> 
     ggplot(aes(x = output, y = caa))+
-    geom_boxplot()+
+    geom_boxplot(fill = "lightblue", alpha = 0.3)+
     scale_x_discrete(labels = c("Menor Chance", "Maior Chance"))+
-    xlab ("Doença Cardíaca")
+    xlab ("Doença Cardíaca")+
+    meu_tema
+  
   #> Grafico horrível
   
   # Histograma
@@ -586,6 +595,8 @@ graf_proporcao_categoricos <- ha |>
   str(data_test)
   
 
+  
+  
 # Modelo Logístico
   
   #. Modelo Completo
@@ -621,21 +632,20 @@ plot(modelo_completo)
   #. Teste: Modelo Completo
  
         # 1. ROC
-  output_por_faixa_de_probabilidades <- data_test_pred |> 
-    mutate(faixa_de_risco = cut_interval(fitted_exp, 7)) |> 
-    group_by(faixa_de_risco) |> 
-    summarise(
-      n = n(),
-      probabilidade_de_output_media = mean(fitted),
-      risco_de_output = mean(output == 1),
-      logito_do_risco_de_output = log(risco_de_output/(1 - risco_de_output)))
-  output_por_faixa_de_probabilidades
 
-library(pROC)
-curva_roc <- roc(output_por_faixa_de_probabilidades, output, probabilidade_de_output)
-auc(curva_roc)
-p <- plot(curva_roc)
-p +annotate("text",x = 0.6, y = 0.8, label = "Area under the curve: 0.9496")
+require (pROC)
+roc_completo <- plot.roc(data_train$output, fitted(modelo_completo))
+plot(roc_completo,
+     print.auc = TRUE,
+     auc.polygon = TRUE,
+     grud = c(0.1,0.2),
+     grid.col = c("green", "red"),
+     max.auc.polygon = TRUE,
+     auc.polygon.col = "lightblue",
+     print.thres = TRUE)
+
+
+  
 
 
 
@@ -660,7 +670,7 @@ p +annotate("text",x = 0.6, y = 0.8, label = "Area under the curve: 0.9496")
       
       # Acurácia do Modelo
       Classifi <- mean(data_test_pred$fitted_cat != data_test_pred$output)
-      print(paste('Accuracy',round(1-Classifi, digits = 3)))
+      acuracia <- round(1-Classifi, digits = 3)
       
       
       data_test_pred <- data_test_pred |> 
@@ -710,10 +720,40 @@ analise_predicao(modelo1)
 # Metricas Desempenho: Tabela de confusão
 desempenho(modelo1) 
 
+acuracia_1 <- mean(data_test_pred1$fitted_cat != data_test_pred1$output)
+acuracia_1 <- round(1-acuracia_1, digits = 3) 
 
 
+#. Modelo 2: somente com variáveis importantes individualmente
 
+modelo2 <- glm(output ~ sex+ cp+ thall+ oldpeak + caa + exng+ restecg + slp, data = data_train, family = binomial)
+summary(modelo2)
+summary(modelo1)
+summary(modelo_completo)
+
+# Analisar predição
+analise_predicao(modelo1)  
+
+# Metricas Desempenho: Tabela de confusão
+desempenho(modelo1)
+
+acuracia_2 <- mean(data_test_pred2$fitted_cat != data_test_pred2$output)
+acuracia_2 <- round(1-acuracia_2, digits = 3) 
+
+
+bind_rows(Modelo = c("Modelo_Completo", "Modelo 1", "Modelo 2"),
+          AIC = as.numeric(c(modelo_completo$aic,
+                             modelo1$aic,
+                             modelo2$aic)))  
  
+
+#> Interpretação: Ao comparar os modelos: completo, modelo1 e modelo2 notamos que
+#> o modelo 2 tem o menor AIC de todos, este modelo só considera as variáveis 
+#> importantes individualmente. Apesar desse modelo ter maior AIC, ele tem menor
+#> poder preditivo do que o modelo completo.
+
+
+
   
 # Analise: Possibilidade de interações ------------------------------------
 
@@ -728,6 +768,7 @@ graf_inter <- function(y, fill){
     theme(legend.position = "bottom")}
 
 # AGE vs categoricas
+par
 graf_inter(y = ha$age, fill = ha$sex)
 graf_inter(y = ha$age, fill = ha$cp)
 graf_inter(y = ha$age,fill = ha$fbs)
