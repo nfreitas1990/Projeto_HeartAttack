@@ -1,0 +1,2 @@
+https://www.kaggle.com/datasets/rashikrahmanpritom/heart-attack-analysis-prediction-dataset
+http://archive.ics.uci.edu/ml/datasets/Heart+Disease
