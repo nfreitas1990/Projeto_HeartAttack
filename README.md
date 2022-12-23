@@ -7,9 +7,12 @@ com maior propensão a sofrer ataque cardíaco. Além de ajudar
 no diagnóstico, possibilita melhor compreensão do problema ao mapear 
 as características que mais se associam ao risco de ataque cardíaco.
 
+## Dados:
+Dados do Kaggle
+
 ## Análises Utilizadas:
 - Análises Descritivas
-- Regressão logística Simples
-- Regressão logística Multipla
-- Teste de Weltch para comparação de médias
-- Teste de Correlação de Spearman
+- Regressão Logística Simples
+- Regressão Logística Múltipla
+- Teste de Comparação de Médias (Teste de Weltch) 
+- Teste de Correlação (Correlação de Spearman)
