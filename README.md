@@ -1,4 +1,7 @@
 # Projeto Heart Attack
+:book:[Relatório Completo](https://github.com/nfreitas1990/Projeto_HeartAttack/blob/main/docs/Projeto_HeartAttack.pdf)
+⚙️[Script Completo](https://github.com/nfreitas1990/Projeto_HeartAttack/tree/main/R)
+
 ![image](https://user-images.githubusercontent.com/28782509/192179697-6e18e6c9-2df9-4735-bcd1-353616003194.png)
 
 ## Objetivo: 
